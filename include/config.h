@@ -29,9 +29,11 @@
 //------simulation constants------
 
 // general
-#define GRAVITY -9.81f   // gravity in m/s^2
-#define DELTA_T 0.025f   // timstep in seconds 1/40s
-#define FLIP_RATIO 0.8f  // flipa vs pic ratio
+#define GRAVITY -9.81f       // gravity in m/s^2
+#define DELTA_T 0.025f       // timstep in seconds 1/40s
+#define FLIP_RATIO 0.8f      // flip vs pic ratio
+#define COMPRENSIBILITY_ITERATIONS 10 //number of comprensibility iterations
+#define OVERRELAXATION 1.9f  // overrelaxation factor to speed up convergence
 
 // particles
 #define NUM_PARTICLES 64
