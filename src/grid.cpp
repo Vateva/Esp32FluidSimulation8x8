@@ -707,6 +707,10 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
 
             // don't compare particle with itself
             if (id == i) continue;
+            // symmetric check: skip if we've already handled this pair
+            // when we processed particle 'id' we already pushed it away from 'i'
+            // t his effectively halves the number of expensive distance checks
+            //wqqif (id <= i) continue;
 
             float qx = particles[id].x_pos;
             float qy = particles[id].y_pos;
