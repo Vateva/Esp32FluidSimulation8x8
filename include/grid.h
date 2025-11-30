@@ -26,8 +26,9 @@ struct InterpolationData {
 
 class Grid {
  private:
-  int size_x, size_y;  // size x * y
-  float cell_size;     // physical size of one grid cell
+  int size_x, size_y;   // size x * y
+  float cell_size;      // physical size of one grid cell
+  float inv_cell_size;  // inverse of cell size to avoid division
 
   float* grid_vx;           // array of vx in cell boundaries
   float* grid_vy;           // array of vy in cell boundaries

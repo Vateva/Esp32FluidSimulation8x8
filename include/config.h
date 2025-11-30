@@ -39,11 +39,11 @@
 #define K_FACTOR 1.0f                                // stiffness factort for density correction
 
 // particles
-#define NUM_PARTICLES 195  // number of fluid particles
+#define NUM_PARTICLES 800  // number of fluid particles
 
 // grid
-#define GRID_SIZE_X 16  // grid cells in x direction
-#define GRID_SIZE_Y 16  // grid cells in y direction
+#define GRID_SIZE_X 32  // grid cells in x direction
+#define GRID_SIZE_Y 32  // grid cells in y direction
 
 // physical dimensions of led matrix in meters
 #define PHYSICAL_WIDTH 0.5f

@@ -10,14 +10,26 @@ Particle particles[NUM_PARTICLES];  // array of all particles
 
 // timing control for fixed timestep
 unsigned long lastStepTime = 0;
-const unsigned long stepInterval = (unsigned long)(DELTA_T * 1000.0f);  // convert seconds to milliseconds
+// const unsigned long stepInterval = (unsigned long)(DELTA_T * 1000.0f); // Moved to loop for consistency
 
 // gravity vector (updated from accelerometer each frame)
 float gravityX = 0.0f;
 float gravityY = -GRAVITY_MAGNITUDE;  // default: pointing down
 
-// particle radius - calculated from cell size
+// particle radius - calculated from cell size like reference code
+// reference uses: r = 0.3 * h where h is cell_size
 float particleRadius = 0.0f;
+
+// --- Profiling Variables (Time in milliseconds) ---
+float t_integrate = 0;  // Movement & Gravity
+float t_push = 0;       // Particle Separation (Heavy)
+float t_collision = 0;  // Wall handling
+float t_grid_prep = 0;  // Resetting/Clearing grid
+float t_p2g = 0;        // Particle -> Grid Transfer
+float t_density = 0;    // Density calculation
+float t_solve = 0;      // Incompressibility (Heavy)
+float t_g2p = 0;        // Grid -> Particle Transfer
+float t_vis = 0;        // LED Visualization
 
 // function to initialize particles in a block formation
 void initializeParticles() {
@@ -137,85 +149,87 @@ void updateGravityFromSensor() {
   gravityY = accelX * GRAVITY_MAGNITUDE;
 }
 
-// execute one complete flip timestep
+// execute one complete flip timestep with profiling
 void runFLIPStep() {
+  unsigned long t0 = micros();
+
   // ===== STEP 1: INTEGRATE PARTICLES =====
   // apply gravity and update positions based on velocity
   for (int i = 0; i < NUM_PARTICLES; i++) {
     particles[i].addGravity(gravityX, gravityY);
     particles[i].updatePosition();
   }
+  unsigned long t1 = micros();
 
   // ===== STEP 2: PUSH PARTICLES APART =====
   // prevent particles from clumping together
-  // uses spatial hashing to efficiently find nearby particles
-  // this maintains fluid volume and prevents numerical instability
   grid.pushParticlesApart(particles, NUM_PARTICLES, 2);  // 2 iterations
+  unsigned long t2 = micros();
 
   // ===== STEP 3: HANDLE WALL COLLISIONS =====
   // clamp particles inside boundaries before transferring to grid
-  // this ensures particles don't contribute velocity from outside valid domain
   for (int i = 0; i < NUM_PARTICLES; i++) {
     grid.handleParticleCollision(&particles[i]);
   }
+  unsigned long t3 = micros();
 
-  // ===== STEP 4: CLASSIFY GRID CELLS =====
+  // ===== STEP 4-6: CLASSIFY & CLEAR =====
   // reset non-wall cells to air, then mark cells containing particles as liquid
   grid.resetCellTypesToAir();
-
   for (int i = 0; i < NUM_PARTICLES; i++) {
     grid.markCellWithLiquid(&particles[i]);
   }
-
-  // ===== STEP 5: SAVE PREVIOUS VELOCITIES =====
-  // store current grid velocities before modification
-  // these will be used to restoreSolidCellVelocities
+  
+  // store current grid velocities before modification (used to restoreSolidCellVelocities)
   grid.savePreviousVelocities();
-
-  // ===== STEP 6: CLEAR GRID FOR TRANSFER =====
+  
   // zero out velocities and weight accumulators
-  // prepares grid to receive fresh data from particles
   grid.clearVelocitiesAndWeights();
+  unsigned long t4 = micros();
 
-  // ===== STEP 7: TRANSFER VELOCITIES FROM PARTICLES TO GRID =====
+  // ===== STEP 7-9: TRANSFER P->G & NORMALIZE =====
   // each particle scatters its velocity to nearby grid points
   for (int i = 0; i < NUM_PARTICLES; i++) {
     grid.transferVelocityfromParticleToGrid(&particles[i]);
   }
-
-  // ===== STEP 8: NORMALIZE GRID VELOCITIES =====
+  
   // divide accumulated velocities by accumulated weights
-  // converts weighted sums into proper averages
   grid.normalizeGridVelocities();
-
-  // ===== STEP 9: RESTORE SOLID BOUNDARY VELOCITIES =====
-  // particles may have scattered velocity onto wall-adjacent faces
-  // restore those to their previous values to maintain boundary conditions
+  
+  // restore solid boundary velocities
   grid.restoreSolidCellVelocities();
+  unsigned long t5 = micros();
 
-  // ===== STEP 10: UPDATE PARTICLE DENSITY =====
+  // ===== STEP 10-11: DENSITY =====
   // compute how many particles are in each cell (using bilinear weights)
-  // this is used for drift compensation in the incompressibility solver
-  // helps prevent volume loss over time
   grid.updateParticleDensity(particles, NUM_PARTICLES);
-
-  // ===== STEP 11: SAVE PREVIOUS VELOCITIES =====
+  
   // Save the velocities before forcingIncompressibility so we can calculate the
   // correct change in velocity for the FLIP update.
   grid.savePreviousVelocities();
+  unsigned long t6 = micros();
 
   // ===== STEP 12: SOLVE FOR INCOMPRESSIBILITY =====
   // iteratively adjust velocities to minimize divergence
-  // this is what makes the fluid behave like liquid (constant volume)
-  // uses gauss-seidel iteration with overrelaxation
   grid.forcingIncompressibility();
+  unsigned long t7 = micros();
 
   // ===== STEP 13: TRANSFER VELOCITIES FROM GRID TO PARTICLES =====
   // interpolate corrected grid velocities back to particles
-  // uses FLIP/PIC blending: FLIP preserves detail, PIC adds stability
   for (int i = 0; i < NUM_PARTICLES; i++) {
     grid.transferVelocityfromGridToParticle(&particles[i]);
   }
+  unsigned long t8 = micros();
+
+  // Convert micros to milliseconds for display
+  t_integrate = (t1 - t0) / 1000.0f;
+  t_push      = (t2 - t1) / 1000.0f;
+  t_collision = (t3 - t2) / 1000.0f;
+  t_grid_prep = (t4 - t3) / 1000.0f;
+  t_p2g       = (t5 - t4) / 1000.0f;
+  t_density   = (t6 - t5) / 1000.0f;
+  t_solve     = (t7 - t6) / 1000.0f;
+  t_g2p       = (t8 - t7) / 1000.0f;
 }
 
 void setup() {
@@ -304,6 +318,7 @@ void setup() {
 void loop() {
   unsigned long currentTime = millis();
   const unsigned long stepInterval = (unsigned long)(FRAME_INTERVAL * 1000.0f);
+  
   // only run simulation step when enough time has passed for fixed timestep
   if (currentTime - lastStepTime >= stepInterval) {
     lastStepTime = currentTime;
@@ -311,22 +326,34 @@ void loop() {
     // read accelerometer and update gravity direction
     updateGravityFromSensor();
 
-    // execute one complete flip simulation step
+    // execute one complete flip simulation step (with profiling internally)
     runFLIPStep();
 
     // visualize the results on led matrix
+    unsigned long t_vis_start = micros();
     visualizeParticles();
+    t_vis = (micros() - t_vis_start) / 1000.0f;
 
     // print debug info every second
-    /*static unsigned long lastPrintTime = 0;
+    static unsigned long lastPrintTime = 0;
     if (currentTime - lastPrintTime > 1000) {
-      Serial.print("Gravity: X=");
-      Serial.print(gravityX, 2);
-      Serial.print(" Y=");
-      Serial.print(gravityY, 2);
-      Serial.print(" m/s^2  |  FPS: ");
-      Serial.println(1000.0f / stepInterval);
+      float total_ms = t_integrate + t_push + t_collision + t_grid_prep + t_p2g + t_density + t_solve + t_g2p + t_vis;
+      float max_fps = 1000.0f / total_ms; // Theoretical max FPS based on calc time
+
+      Serial.println("\n--- Performance Stats ---");
+      Serial.printf("Total Frame Time: %.2f ms | Max FPS: %.1f\n", total_ms, max_fps);
+      Serial.println("Breakdown:");
+      Serial.printf("  1. Integrate: %.2f ms\n", t_integrate);
+      Serial.printf("  2. Separation:%.2f ms\n", t_push);
+      Serial.printf("  3. Collision: %.2f ms\n", t_collision);
+      Serial.printf("  4. Grid Prep: %.2f ms\n", t_grid_prep);
+      Serial.printf("  5. P -> G:    %.2f ms\n", t_p2g);
+      Serial.printf("  6. Density:   %.2f ms\n", t_density);
+      Serial.printf("  7. Solver:    %.2f ms\n", t_solve);
+      Serial.printf("  8. G -> P:    %.2f ms\n", t_g2p);
+      Serial.printf("  9. Visualize: %.2f ms\n", t_vis);
+
       lastPrintTime = currentTime;
-    }*/
+    }
   }
 }

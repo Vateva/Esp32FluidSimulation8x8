@@ -9,6 +9,7 @@ Grid::Grid() {
   float cell_size_x = PHYSICAL_WIDTH / size_x;
   float cell_size_y = PHYSICAL_HEIGHT / size_y;
   cell_size = (cell_size_x > cell_size_y) ? cell_size_x : cell_size_y;
+  inv_cell_size = 1.0f / cell_size;
 
   // allocate memory for arrays
   grid_vx = new float[num_cells];
@@ -36,7 +37,6 @@ Grid::Grid() {
     grid_previous_vx[i] = 0.0f;
     grid_previous_vy[i] = 0.0f;
   }
-
 }
 
 InterpolationData Grid::getInterpolationData(Particle* particle, VelocityComponent component) {
@@ -57,8 +57,8 @@ InterpolationData Grid::getInterpolationData(Particle* particle, VelocityCompone
   particle_pos_y = utils::clamp(particle_pos_y, cell_size, (size_y - 1) * cell_size);
 
   // determine which cell (within the staggered velocity grid)
-  uint16_t velocities_grid_cell_i = particle_pos_x / cell_size;
-  uint16_t velocities_grid_cell_j = particle_pos_y / cell_size;
+  uint16_t velocities_grid_cell_i = particle_pos_x * inv_cell_size;
+  uint16_t velocities_grid_cell_j = particle_pos_y * inv_cell_size;
   // clamp cell indices so +1 never exceeds bounds
   velocities_grid_cell_i = utils::clamp(velocities_grid_cell_i, 0, size_x - 2);
   velocities_grid_cell_j = utils::clamp(velocities_grid_cell_j, 0, size_y - 2);
@@ -68,10 +68,10 @@ InterpolationData Grid::getInterpolationData(Particle* particle, VelocityCompone
   float delta_y = particle_pos_y - velocities_grid_cell_j * cell_size;
 
   // calculate weights
-  data.weight1 = (1 - (delta_x / cell_size)) * (1 - (delta_y / cell_size));
-  data.weight2 = (delta_x / cell_size) * (1 - (delta_y / cell_size));
-  data.weight3 = (delta_x / cell_size) * (delta_y / cell_size);
-  data.weight4 = (1 - (delta_x / cell_size)) * (delta_y / cell_size);
+  data.weight1 = (1 - (delta_x * inv_cell_size)) * (1 - (delta_y * inv_cell_size));
+  data.weight2 = (delta_x * inv_cell_size) * (1 - (delta_y * inv_cell_size));
+  data.weight3 = (delta_x * inv_cell_size) * (delta_y * inv_cell_size);
+  data.weight4 = (1 - (delta_x * inv_cell_size)) * (delta_y * inv_cell_size);
 
   // find the index of the four grid corners in the 1D array
   data.index_00 = velocities_grid_cell_i * size_y + velocities_grid_cell_j;              // bottom left
@@ -114,8 +114,8 @@ void Grid::markCellWithLiquid(Particle* particle) {
   float particle_pos_y = particle->getY();
 
   // determine which cell contains this particle
-  int cell_i = particle_pos_x / cell_size;
-  int cell_j = particle_pos_y / cell_size;
+  int cell_i = particle_pos_x * inv_cell_size;
+  int cell_j = particle_pos_y * inv_cell_size;
 
   // clamp to valid interior range away from walls
   cell_i = utils::clamp(cell_i, 1, size_x - 2);
@@ -182,8 +182,6 @@ void Grid::transferVelocityfromParticleToGrid(Particle* particle) {
   //***** vx transfer from particle to grid *****
 
   InterpolationData vx_data = getInterpolationData(particle, VelocityComponent::VX);
-
-
 
   // add particle velocity * weight to each corner
   grid_vx[vx_data.index_00] = grid_vx[vx_data.index_00] + vx_data.weight1 * particle->getVx();
@@ -277,15 +275,15 @@ void Grid::forcingIncompressibility() {
         divergence = OVERRELAXATION * divergence;
 
         sum_s = s_iplus1_j + s_iminus1_j + s_i_jplus1 + s_i_jminus1;
-
+        float inv_sum_s = 1.0f / sum_s;  // compute inverse only one to avoid division as much as possible
         if (sum_s == 0) {
           continue;
         }
 
-        grid_vx[index_i_j] = grid_vx[index_i_j] + (divergence * (s_iminus1_j / sum_s));
-        grid_vx[index_iplus1_j] = grid_vx[index_iplus1_j] - (divergence * (s_iplus1_j / sum_s));
-        grid_vy[index_i_j] = grid_vy[index_i_j] + (divergence * (s_i_jminus1 / sum_s));
-        grid_vy[index_i_jplus1] = grid_vy[index_i_jplus1] - (divergence * (s_i_jplus1 / sum_s));
+        grid_vx[index_i_j] = grid_vx[index_i_j] + (divergence * (s_iminus1_j * inv_sum_s));
+        grid_vx[index_iplus1_j] = grid_vx[index_iplus1_j] - (divergence * (s_iplus1_j * inv_sum_s));
+        grid_vy[index_i_j] = grid_vy[index_i_j] + (divergence * (s_i_jminus1 * inv_sum_s));
+        grid_vy[index_i_jplus1] = grid_vy[index_i_jplus1] - (divergence * (s_i_jplus1 * inv_sum_s));
       }
     }
   }
@@ -601,7 +599,7 @@ void Grid::updateParticleDensity(Particle* particles, int num_particles) {
 
   int n = size_y;
   float h = cell_size;
-  float h1 = 1.0f / cell_size;
+  float h1 = 1.0f * inv_cell_size;
   float h2 = 0.5f * cell_size;  // half cell size for centering
 
   // clear density array
