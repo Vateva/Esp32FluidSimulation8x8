@@ -50,8 +50,8 @@ InterpolationData Grid::getInterpolationData(Particle* particle, VelocityCompone
   float offset_y = (component == VelocityComponent::VX) ? cell_size * 0.5f : 0.0f;
 
   // shift particle position into the velocity components coordinate system
-  float particle_pos_x = particle->getX() - offset_x;
-  float particle_pos_y = particle->getY() - offset_y;
+  float particle_pos_x = particle->x_pos - offset_x;
+  float particle_pos_y = particle->y_pos - offset_y;
   // clamp particle position to safe range (one cell away from boundaries)
   particle_pos_x = utils::clamp(particle_pos_x, cell_size, (size_x - 1) * cell_size);
   particle_pos_y = utils::clamp(particle_pos_y, cell_size, (size_y - 1) * cell_size);
@@ -110,8 +110,8 @@ void Grid::markCellWalls() {
 }
 
 void Grid::markCellWithLiquid(Particle* particle) {
-  float particle_pos_x = particle->getX();
-  float particle_pos_y = particle->getY();
+  float particle_pos_x = particle->x_pos;
+  float particle_pos_y = particle->y_pos;
 
   // determine which cell contains this particle
   int cell_i = particle_pos_x * inv_cell_size;
@@ -184,10 +184,10 @@ void Grid::transferVelocityfromParticleToGrid(Particle* particle) {
   InterpolationData vx_data = getInterpolationData(particle, VelocityComponent::VX);
 
   // add particle velocity * weight to each corner
-  grid_vx[vx_data.index_00] = grid_vx[vx_data.index_00] + vx_data.weight1 * particle->getVx();
-  grid_vx[vx_data.index_10] = grid_vx[vx_data.index_10] + vx_data.weight2 * particle->getVx();
-  grid_vx[vx_data.index_11] = grid_vx[vx_data.index_11] + vx_data.weight3 * particle->getVx();
-  grid_vx[vx_data.index_01] = grid_vx[vx_data.index_01] + vx_data.weight4 * particle->getVx();
+  grid_vx[vx_data.index_00] = grid_vx[vx_data.index_00] + vx_data.weight1 * particle->vx;
+  grid_vx[vx_data.index_10] = grid_vx[vx_data.index_10] + vx_data.weight2 * particle->vx;
+  grid_vx[vx_data.index_11] = grid_vx[vx_data.index_11] + vx_data.weight3 * particle->vx;
+  grid_vx[vx_data.index_01] = grid_vx[vx_data.index_01] + vx_data.weight4 * particle->vx;
 
   // add each each corner wright to each corner weight acumulator
   vx_weight_accumulator[vx_data.index_00] = vx_weight_accumulator[vx_data.index_00] + vx_data.weight1;
@@ -200,10 +200,10 @@ void Grid::transferVelocityfromParticleToGrid(Particle* particle) {
   InterpolationData vy_data = getInterpolationData(particle, VelocityComponent::VY);
 
   // add particle velocity * weight to each corner
-  grid_vy[vy_data.index_00] = grid_vy[vy_data.index_00] + vy_data.weight1 * particle->getVy();
-  grid_vy[vy_data.index_10] = grid_vy[vy_data.index_10] + vy_data.weight2 * particle->getVy();
-  grid_vy[vy_data.index_11] = grid_vy[vy_data.index_11] + vy_data.weight3 * particle->getVy();
-  grid_vy[vy_data.index_01] = grid_vy[vy_data.index_01] + vy_data.weight4 * particle->getVy();
+  grid_vy[vy_data.index_00] = grid_vy[vy_data.index_00] + vy_data.weight1 * particle->vy;
+  grid_vy[vy_data.index_10] = grid_vy[vy_data.index_10] + vy_data.weight2 * particle->vy;
+  grid_vy[vy_data.index_11] = grid_vy[vy_data.index_11] + vy_data.weight3 * particle->vy;
+  grid_vy[vy_data.index_01] = grid_vy[vy_data.index_01] + vy_data.weight4 * particle->vy;
 
   // add each each corner wright to each corner weight acumulator
   vy_weight_accumulator[vy_data.index_00] = vy_weight_accumulator[vy_data.index_00] + vy_data.weight1;
@@ -344,11 +344,11 @@ void Grid::transferVelocityfromGridToParticle(Particle* particle) {
                     valid_weight_sum_vx;
 
     // flip velocity = current particle velocity + grid velocity change
-    float flip_vx = particle->getVx() + corr_vx;
+    float flip_vx = particle->vx + corr_vx;
 
     // blend pic and flip based on ratio
     float new_vx = (1.0f - FLIP_RATIO) * pic_vx + FLIP_RATIO * flip_vx;
-    particle->setVx(new_vx);
+    particle->vx = (new_vx);
   }
   // if no valid samples, particle keeps its current vx unchanged
 
@@ -400,11 +400,11 @@ void Grid::transferVelocityfromGridToParticle(Particle* particle) {
                     valid_weight_sum_vy;
 
     // flip velocity = current particle velocity + grid velocity change
-    float flip_vy = particle->getVy() + corr_vy;
+    float flip_vy = particle->vy + corr_vy;
 
     // blend pic and flip based on ratio
     float new_vy = (1.0f - FLIP_RATIO) * pic_vy + FLIP_RATIO * flip_vy;
-    particle->setVy(new_vy);
+    particle->vy = (new_vy);
   }
   // if no valid samples, particle keeps its current vy unchanged
 }
@@ -416,10 +416,10 @@ void Grid::handleParticleCollision(Particle* particle) {
   float min_y = cell_size;
   float max_y = (size_y - 1) * cell_size;
 
-  float x = particle->getX();
-  float y = particle->getY();
-  float vx = particle->getVx();
-  float vy = particle->getVy();
+  float x = particle->x_pos;
+  float y = particle->y_pos;
+  float vx = particle->vx;
+  float vy = particle->vy;
 
   // check left wall
   if (x < min_x) {
@@ -443,10 +443,10 @@ void Grid::handleParticleCollision(Particle* particle) {
   }
 
   // update particle (you'll need position setters)
-  particle->setX(x);
-  particle->setY(y);
-  particle->setVx(vx);
-  particle->setVy(vy);
+  particle->x_pos = (x);
+  particle->y_pos = (y);
+  particle->vx = (vx);
+  particle->vy = (vy);
 }
 
 void Grid::initParticleSpatialHash(int max_particles, float p_radius) {
@@ -486,8 +486,8 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
   }
 
   for (int i = 0; i < num_particles; i++) {
-    float x = particles[i].getX();
-    float y = particles[i].getY();
+    float x = particles[i].x_pos;
+    float y = particles[i].y_pos;
 
     // find which cell this particle belongs to in the spatial hash grid
     int xi = utils::clamp((int)(x * p_inv_spacing), 0, p_num_x - 1);
@@ -511,8 +511,8 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
   // ----- step 3: fill particles into cells (backwards) -----
 
   for (int i = 0; i < num_particles; i++) {
-    float x = particles[i].getX();
-    float y = particles[i].getY();
+    float x = particles[i].x_pos;
+    float y = particles[i].y_pos;
 
     int xi = utils::clamp((int)(x * p_inv_spacing), 0, p_num_x - 1);
     int yi = utils::clamp((int)(y * p_inv_spacing), 0, p_num_y - 1);
@@ -530,8 +530,8 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
 
   for (int iter = 0; iter < num_iterations; iter++) {
     for (int i = 0; i < num_particles; i++) {
-      float px = particles[i].getX();
-      float py = particles[i].getY();
+      float px = particles[i].x_pos;
+      float py = particles[i].y_pos;
 
       // find which cell this particle is in
       int pxi = (int)(px * p_inv_spacing);
@@ -557,8 +557,8 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
             // don't compare particle with itself
             if (id == i) continue;
 
-            float qx = particles[id].getX();
-            float qy = particles[id].getY();
+            float qx = particles[id].x_pos;
+            float qy = particles[id].y_pos;
 
             // vector from particle i to particle id
             float dx = qx - px;
@@ -569,22 +569,23 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
             if (dist_squared > min_dist_squared || dist_squared == 0.0f) continue;
 
             // compute actual distance and push amount
-            float dist = sqrtf(dist_squared);
-            float push = 0.5f * (min_dist - dist) / dist;
+            // use quakeii fast inverse sqrt to avoid expensive sqrt and division
+            float invDist = utils::fastInvSqrt(dist_squared);
+            float push = 0.5f * (min_dist * invDist - 1.0f);
 
             // scale the direction vector by push amount
             dx *= push;
             dy *= push;
 
             // push particles apart (each moves half the overlap distance)
-            particles[i].setX(px - dx);
-            particles[i].setY(py - dy);
-            particles[id].setX(qx + dx);
-            particles[id].setY(qy + dy);
+            particles[i].x_pos = (px - dx);
+            particles[i].y_pos = (py - dy);
+            particles[id].x_pos = (qx + dx);
+            particles[id].y_pos = (qy + dy);
 
             // update px, py since particle i moved
-            px = particles[i].getX();
-            py = particles[i].getY();
+            px = particles[i].x_pos;
+            py = particles[i].y_pos;
           }
         }
       }
@@ -609,8 +610,8 @@ void Grid::updateParticleDensity(Particle* particles, int num_particles) {
 
   // scatter particle contributions to grid using bilinear weights
   for (int i = 0; i < num_particles; i++) {
-    float x = particles[i].getX();
-    float y = particles[i].getY();
+    float x = particles[i].x_pos;
+    float y = particles[i].y_pos;
 
     // clamp position to valid range
     x = utils::clamp(x, h, (size_x - 1) * h);

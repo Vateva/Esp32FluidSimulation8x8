@@ -8,6 +8,9 @@ namespace utils {
 // clamp value between min and max
 float clamp(float value, float min_val, float max_val);
 
+// quake III fast inverse square root
+float fastInvSqrt(float number);
+
 // qmi8658 sensor functions
 bool initQMI8658();
 void readQMI8658Accel(float* x, float* y, float* z);

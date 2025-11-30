@@ -9,6 +9,22 @@ float clamp(float value, float min_val, float max_val) {
   return value;
 }
 
+// quake III fast inverse square root algorithm
+float fastInvSqrt(float number) {
+  long i;
+  float x2, y;
+  const float threehalfs = 1.5F;
+
+  x2 = number * 0.5F;
+  y = number;
+  i = *(long*)&y;                             // treat float bits directly as an integer to allow bit manipulation
+  i = 0x5f3759df - (i >> 1);                  // generate initial approximation using the magic number constant
+  y = *(float*)&i;                            // convert the integer bits back into a floating point number
+  y = y * (threehalfs - (x2 * y * y));        // perform one iteration of newton's method to improve precision
+  
+  return y;
+}
+
 // initialize qmi8658 accelerometer sensor
 bool initQMI8658() {
   uint8_t whoami = readRegister(QMI8658_WHO_AM_I);

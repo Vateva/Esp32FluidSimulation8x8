@@ -74,10 +74,10 @@ void initializeParticles() {
       // hexagonal packing: offset every other row by half dx
       float offset = (j % 2 == 0) ? 0.0f : particleRadius;
 
-      particles[particle_index].setX(start_x + i * dx + offset);
-      particles[particle_index].setY(start_y + j * dy);
-      particles[particle_index].setVx(0.0f);
-      particles[particle_index].setVy(0.0f);
+      particles[particle_index].x_pos = (start_x + i * dx + offset);
+      particles[particle_index].y_pos = (start_y + j * dy);
+      particles[particle_index].vx = (0.0f);
+      particles[particle_index].vy = (0.0f);
       particle_index++;
     }
   }
@@ -85,10 +85,10 @@ void initializeParticles() {
   // if we didn't fill all particles, set remaining to a safe position
   // (this shouldn't happen with proper NUM_PARTICLES but just in case)
   while (particle_index < NUM_PARTICLES) {
-    particles[particle_index].setX(start_x);
-    particles[particle_index].setY(start_y);
-    particles[particle_index].setVx(0.0f);
-    particles[particle_index].setVy(0.0f);
+    particles[particle_index].x_pos = (start_x);
+    particles[particle_index].y_pos = (start_y);
+    particles[particle_index].vx = (0.0f);
+    particles[particle_index].vy = (0.0f);
     particle_index++;
   }
 
@@ -112,8 +112,8 @@ void visualizeParticles() {
   // count particles per LED
   for (int i = 0; i < NUM_PARTICLES; i++) {
     // convert particle position from meters to led pixel coordinates
-    int led_x = (int)(particles[i].getX() / PHYSICAL_WIDTH * 8.0f);
-    int led_y = (int)(particles[i].getY() / PHYSICAL_HEIGHT * 8.0f);
+    int led_x = (int)(particles[i].x_pos / PHYSICAL_WIDTH * 8.0f);
+    int led_y = (int)(particles[i].y_pos / PHYSICAL_HEIGHT * 8.0f);
 
     // ensure we are within grid bounds
     if (led_x >= 0 && led_x < 8 && led_y >= 0 && led_y < 8) {
@@ -163,7 +163,7 @@ void runFLIPStep() {
 
   // ===== STEP 2: PUSH PARTICLES APART =====
   // prevent particles from clumping together
-  grid.pushParticlesApart(particles, NUM_PARTICLES, 2);  // 2 iterations
+  grid.pushParticlesApart(particles, NUM_PARTICLES, 2);  // 1 iterations
   unsigned long t2 = micros();
 
   // ===== STEP 3: HANDLE WALL COLLISIONS =====
