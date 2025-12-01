@@ -562,35 +562,44 @@ void Grid::transferVelocityfromGridToParticle(Particle* particle) {
 
 void Grid::handleParticleCollision(Particle* particle) {
   // boundaries: one cell inward from walls
-  float min_x = cell_size;
-  float max_x = (size_x - 1) * cell_size;
-  float min_y = cell_size;
-  float max_y = (size_y - 1) * cell_size;
+  float min_x = cell_size + particle_radius;
+  float max_x = (size_x - 1) * cell_size - particle_radius;
+  float min_y = cell_size + particle_radius;
+  float max_y = (size_y - 1) * cell_size - particle_radius;
 
   float x = particle->x_pos;
   float y = particle->y_pos;
   float vx = particle->vx;
   float vy = particle->vy;
 
+  // bounce off the wall with restitution * velocity
+  float restitution = 0.0f;
+  //friction that slows particles in direction of wall
+  float friction_factor = 0.85f;
+
   // check left wall
   if (x < min_x) {
     x = min_x;
-    vx = 0.0f;
+    vx = -vx * restitution;  // Bounce instead of stick
+    vy = vy * friction_factor; // Apply friction to sliding
   }
   // check right wall
   if (x > max_x) {
     x = max_x;
-    vx = 0.0f;
+    vx = -vx * restitution;
+    vy = vy * friction_factor;
   }
   // check bottom wall
   if (y < min_y) {
     y = min_y;
-    vy = 0.0f;
+    vy = -vy * restitution;
+    vx = vx * friction_factor;
   }
   // check top wall
   if (y > max_y) {
     y = max_y;
-    vy = 0.0f;
+    vy = -vy * restitution;
+    vx = vx * friction_factor;
   }
 
   // update particle (you'll need position setters)
@@ -710,7 +719,7 @@ void Grid::pushParticlesApart(Particle* particles, int num_particles, int num_it
             // symmetric check: skip if we've already handled this pair
             // when we processed particle 'id' we already pushed it away from 'i'
             // t his effectively halves the number of expensive distance checks
-            //wqqif (id <= i) continue;
+            // wqqif (id <= i) continue;
 
             float qx = particles[id].x_pos;
             float qy = particles[id].y_pos;

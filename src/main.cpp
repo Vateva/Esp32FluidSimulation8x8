@@ -132,7 +132,7 @@ void visualizeParticles() {
       matrix.setPixelColor(i, matrix.Color(0, 50, brightness));  // Dynamic brightness*/
 
       // or simple solid color
-      matrix.setPixelColor(i, matrix.Color(110, 60, 255));
+      matrix.setPixelColor(i, matrix.Color(40, 60, 255));
     }
   }
 

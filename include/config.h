@@ -31,7 +31,7 @@
 // general
 #define GRAVITY_MAGNITUDE 9.81f                      // gravity magnitude in m/s^2
 #define FRAME_INTERVAL 0.020f                        // real time between frames
-#define SPEED_MULTIPLIER 1.25f                       // adjust this to control speed
+#define SPEED_MULTIPLIER 1.3f                        // adjust this to control speed
 #define DELTA_T (FRAME_INTERVAL * SPEED_MULTIPLIER)  // physics timestep
 #define FLIP_RATIO 0.9f                              // flip vs pic ratio
 #define INCOMPRESSIBILITY_ITERATIONS 20              // number of incompressibility iterations
@@ -39,17 +39,17 @@
 #define K_FACTOR 1.0f                                // stiffness factort for density correction
 
 // particles
-#define NUM_PARTICLES 800  // number of fluid particles
+#define NUM_PARTICLES 850  // number of fluid particles
 
 // grid
 #define GRID_SIZE_X 32  // grid cells in x direction
 #define GRID_SIZE_Y 32  // grid cells in y direction
 
 // physical dimensions of led matrix in meters
-#define PHYSICAL_WIDTH 1.0f
-#define PHYSICAL_HEIGHT 1.0f
+#define PHYSICAL_WIDTH 0.5f
+#define PHYSICAL_HEIGHT 0.5f
 
 // visualization
-#define PARTICLE_THRESHOLD 7  // minimum particles required to turn on an LED
+#define PARTICLE_THRESHOLD 5.0f
 
 #endif
