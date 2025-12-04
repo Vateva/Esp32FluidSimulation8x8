@@ -44,7 +44,7 @@
 
 // general
 #define GRAVITY_MAGNITUDE 9.81f                      // gravity magnitude in m/s^2
-#define FRAME_INTERVAL 0.020f                        // real time between frames
+#define FRAME_INTERVAL 0.0195f                        // real time between frames
 #define SPEED_MULTIPLIER 1.25f                        // adjust this to control speed
 #define DELTA_T (FRAME_INTERVAL * SPEED_MULTIPLIER)  // physics timestep
 #define FLIP_RATIO 0.8f                              // flip vs pic ratio

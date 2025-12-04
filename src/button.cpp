@@ -39,9 +39,8 @@ ButtonHandler::ButtonHandler() {
 
 void ButtonHandler::init() {
   // configure button pin with internal pull-up
-  // ttp223 typically outputs HIGH when touched, but with INPUT_PULLUP
   // we read LOW when pressed (active low)
-  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   // load saved settings from nvs
   loadSettings();
@@ -96,8 +95,8 @@ void ButtonHandler::saveSettings() {
 
 bool ButtonHandler::getStableState() {
   // read raw state from pin
-  // LOW = pressed (because INPUT_PULLUP, active low)
-  bool current_raw = (digitalRead(BUTTON_PIN) == HIGH);
+  // LOW = pressed (because INPUT_PULLUP, active LOW)
+  bool current_raw = (digitalRead(BUTTON_PIN) == LOW);
   
   // check if raw state changed from last reading
   if (current_raw != last_raw_state) {

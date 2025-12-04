@@ -4,6 +4,10 @@
 #include "utils.h"
 #include "button.h"
 
+#include <WiFi.h>
+#include <esp_bt.h>
+#include <esp_wifi.h>
+
 // global instances
 Adafruit_NeoPixel matrix = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGB + NEO_KHZ800);
 Grid grid;                          // single grid instance for the simulation
@@ -254,6 +258,13 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  WiFi.mode(WIFI_OFF);
+  btStop();
+  esp_wifi_stop();
+  esp_bt_controller_disable();
+
+  setCpuFrequencyMhz(240);
+
   Serial.println("\n\n================================");
   Serial.println("FLIP Fluid Simulation - ESP32-S3");
   Serial.println("================================\n");
@@ -358,7 +369,7 @@ void loop() {
     t_vis = (micros() - t_vis_start) / 1000.0f;
 
     // print debug info every second
-    /*static unsigned long lastPrintTime = 0;
+    static unsigned long lastPrintTime = 0;
     if (currentTime - lastPrintTime > 1000) {
       float total_ms = t_integrate + t_push + t_collision + t_grid_prep + t_p2g + t_density + t_solve + t_g2p + t_vis;
       float max_fps = 1000.0f / total_ms;  // Theoretical max FPS based on calc time
@@ -377,6 +388,6 @@ void loop() {
       Serial.printf("  9. Visualize: %.2f ms\n", t_vis);
 
       lastPrintTime = currentTime;
-    }*/
+    }
   }
 }
