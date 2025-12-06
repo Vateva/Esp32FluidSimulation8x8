@@ -20,7 +20,8 @@ Main objective is to implement a particle-based fluid dynamics simulation using 
 <img width="482" height="350" alt="casing" src="https://github.com/user-attachments/assets/28c9bfaa-b1ef-40e2-9b1b-5ab7b9efb6e8" />
 
 ### Place the components in casing
-<img width="482" height="350" alt="casing" src="https://github.com/user-attachments/assets/de4b21bf-6d72-4db8-b73f-55316a5819d2" />
+<img width="350" height="455" alt="gutsincasing" src="https://github.com/user-attachments/assets/609cc651-fc70-4232-86ad-caa702ecf82c" />
+
 
 ### Finished product
 <img width="1135" height="1500" alt="finished2" src="https://github.com/user-attachments/assets/a118e2cc-514e-43a4-b093-3f5e72528e4d" />
